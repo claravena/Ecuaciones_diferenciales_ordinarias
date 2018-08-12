@@ -23,11 +23,10 @@ int main(){
   double x0=5.0;
   double v0=0.0;
   //char a = euler; 
- euler_predictor_corrector(f,t0,tf,dt,x0,v0);
+  euler_predictor_corrector(f,t0,tf,dt,x0,v0);
   //cout<<a<<endl;
 
   return 0;
    
 }
 
-//double (*parametro)(double double),

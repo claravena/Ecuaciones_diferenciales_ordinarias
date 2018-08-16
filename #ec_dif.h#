@@ -12,6 +12,7 @@ using namespace std;
 
 //Todas los métodos son para ec. dif de segundo orden y sus argumentos son funcion a integrar con tres variables posicion, velocidad , tiempo, luego t0 tiempo inicial, tf tiempo final, dt paso de tiempo, x0 posicion a t0, y v0 velocidad a t0. 
 
+
 void euler( double (*funcion)(double, double, double), double , double , double , double , double );
 
 void euler_cromer( double (*funcion)(double, double, double), double , double , double , double , double );

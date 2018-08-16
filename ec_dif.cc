@@ -174,11 +174,11 @@ void RK4_adaptativo( double (*funcion)(double, double,double), double t0, double
   vector<double> vec_x={x0};
   vector<double> vec_v={v0};
   
-  for(int i=0; i<((tf-t0)/dt); ++i){
-    ofstream archivo("datos_posicion_RK4.dat", ios::app);
+  for(int i=0; i<10000000; ++i){
+    ofstream archivo("datos_posicion_RK4a..dat", ios::app);
     archivo <<t<<" "<< x<<endl;
     archivo.close();
-    ofstream archivo1("datos_velocidad_RK4.dat", ios::app);
+    ofstream archivo1("datos_velocidad_RK4a.dat", ios::app);
     archivo1 <<t<<" "<< v<<endl;
     archivo.close();
     double k1= h*v; 
@@ -193,23 +193,23 @@ void RK4_adaptativo( double (*funcion)(double, double,double), double t0, double
     vec_x.push_back(x);
     v+=(l1+2*l2+2*l3+l4)/6;
     vec_v.push_back(v);
-    cout << t<<endl;
+    t+=h;
+    //cout << t<<endl;
     //Paso adaptativo. 
-    double delta0=0.001;
+    double delta0=0.00000001;
     double delta_estimado=abs(vec_x[i+1]-vec_x[i]);
     double t_estimado= pow(abs(delta0/delta_estimado),1./5.0)*h;
     double S1=0.9;
     double S2=4.0; 
     if ((S1*t_estimado) > (S2*h)){
-      t+= S2*h;
+      h= S2*dt;
     }
     else if ((S1*t_estimado)< (h/S2)){
-      t+= h/S2;
+      h= dt/2.;
 
     }
     else {
-      t+=S1*t_estimado; 
-      
+      h=S1*t_estimado; 
     }
   }
 }
@@ -237,6 +237,49 @@ void euler_predictor_corrector( double (*funcion)(double, double, double), doubl
     archivo1.close();
   }
 }  
+
+
+
+
+
+
+
+
+void PEFRL( double (*f)(double, double,double), double t0, double tf, double dt, double x0,double v0){
+  double h= dt;
+  double x= x0;
+  double v= v0; 
+  double t=t0+4*h;
+  double m=1;
+  double eta= 0.1786178958448091;
+  double lambda=0.2123418310626054;
+  double xi=-0.6626458266981849;
+  vector<double> vec_x={x0};
+  vector<double> vec_v={v0};
+  vec_x.push_back(vec_x[0]+eta*h*vec_v[0]);
+  vec_v.push_back(vec_v[0]+(1.0-2.0*lambda)*h*f(vec_x[1],vec_v[1],t+h)/(2.*m));
+  //cout<<vec_x[1]<<" "<<vec_v[1]<<endl;
+  vec_x.push_back(vec_x[1]+xi*h*vec_v[1]);
+  vec_v.push_back(vec_v[1]+lambda*h*f(vec_x[2],vec_v[2],t+2*h)/m);
+  //cout<<vec_x[2]<<" "<<vec_v[2]<<endl;
+  vec_x.push_back(vec_x[2]+(1-2*(xi+eta))*h*vec_v[2]);
+  vec_v.push_back(vec_v[2]+lambda*h*f(vec_x[3],vec_v[3],t+3*h)/m);
+  //cout<<vec_x[3]<<" "<<vec_v[3]<<endl;
+  vec_x.push_back(vec_x[3]+xi*h*vec_v[3]);
+  for(int i=4; i<((tf-t0)/dt); ++i){
+    vec_v.push_back(vec_v[i-1]+(1-2.*lambda)*h*f(vec_x[i],vec_v[i],t)/(2.*m));
+    cout<<vec_x[i-1]<<" "<<vec_v[i-1]<<endl;
+    vec_x.push_back(vec_x[i]+eta*h*vec_v[i]);
+    t+= h;
+    ofstream archivo("datos_posicion_RK4.dat", ios::app);
+    archivo <<t<<" "<< vec_x[i]<<endl;
+    archivo.close();
+    ofstream archivo1("datos_velocidad_RK4.dat", ios::app);
+    archivo1 <<t<<" "<< vec_v[i]<<endl;
+    archivo.close();
+  }
+}
+
 
 
 

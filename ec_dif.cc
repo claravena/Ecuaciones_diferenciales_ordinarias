@@ -1,20 +1,109 @@
 #include "ec_dif.h"
 
 
-void euler( double (*funcion)(double, double, double), double t0, double tf, double dt, double x0, double v0){
+void integrador(vector<double> (*metodo)(double a, double pos,double vel,double t_1,double dt), vector<double> (*funcion)(vector<double> r_pos, vector<double> v_pos, double tiempos), vector<double> r ,vector<double> v, vector<double> tiempo ){
+  double t= tiempo[0];
+  double tf=tiempo[1]; 
+  double h= tiempo[2]; 
+  vector<double> vec_r=r;
+  vector<double> vec_v=v;
+  
+  while(t<=tf){
+    ofstream archivo("datos_velocidad.dat", ios::app);
+    archivo <<t<<" "<< vec_v[0]<<" "<<vec_v[1]<<" "<<vec_r[2]<<endl;
+    cout <<t<<" "<< vec_v[0]<<" "<<vec_v[1]<<" "<<vec_r[2]<<endl;
+    archivo.close();
+    ofstream archivo1("datos_posicion.dat", ios::app);
+    archivo1 <<t<<" "<< vec_r[0]<<" "<<vec_r[1]<<" "<<vec_r[2]<<endl;
+    cout <<t<<" "<< vec_r[0]<<" "<<vec_r[1]<<" "<<vec_r[2]<<endl;
+    archivo1.close();
+    vector<double> a = funcion(vec_r,vec_v,t);
+    vector<double> vec_aux_r=vec_r; //copian el paso anterior de posicion;
+    vector<double> vec_aux_v=vec_v; //copian el paso anterio de posicion;
+    for(int j=0; j<3; ++j){
+      vector<double> vec_estado=metodo(a[j],vec_r[j],vec_v[j],t,h);
+      vec_r[j]=vec_estado[0];
+      vec_v[j]=vec_estado[1];
+    }
+    t+= h;
+    
+  }
+}
+
+void integrador_adaptativo(vector<double> (*metodo)(double a, double pos,double vel,double t_1,double dt), vector<double> (*funcion)(vector<double> r_pos, vector<double> v_pos, double tiempos), vector<double> r ,vector<double> v, vector<double> tiempo ){
+  double t= tiempo[0];
+  double tf=tiempo[1]; 
+  double h= tiempo[2]; 
+  vector<double> vec_r=r;
+  vector<double> vec_v=v;
+  double delta_esperado=0.00000001;
+  double S1=0.9;
+  double S2=4.0; 
+ 
+
+  while(t<=tf){
+    ofstream archivo("datos_velocidad.dat", ios::app);
+    archivo <<t<<" "<< vec_v[0]<<" "<<vec_v[1]<<" "<<vec_r[2]<<endl;
+    cout <<t<<" "<< vec_v[0]<<" "<<vec_v[1]<<" "<<vec_r[2]<<endl;
+    archivo.close();
+    ofstream archivo1("datos_posicion.dat", ios::app);
+    archivo1 <<t<<" "<< vec_r[0]<<" "<<vec_r[1]<<" "<<vec_r[2]<<endl;
+    cout <<t<<" "<< vec_r[0]<<" "<<vec_r[1]<<" "<<vec_r[2]<<endl;
+    archivo1.close();
+    vector<double> a = funcion(vec_r,vec_v,t);
+    vector<double> vec_aux_r=vec_r; //copian el paso anterior de posicion;
+    vector<double> vec_aux_v=vec_v; //copian el paso anterio de posicion;
+    for(int j=0; j<3; ++j){
+      vector<double> vec_estado=metodo(a[j],vec_r[j],vec_v[j],t,h);
+      vec_r[j]=vec_estado[0];
+      vec_v[j]=vec_estado[1];
+    }
+    t+= h;
+    double norma_actual=sqrt(vec_r[0]*vec_r[0]+vec_r[1]*vec_r[1]+vec_r[2]*vec_r[2]);
+    double norma_anterior=sqrt(vec_aux_r[0]*vec_aux_r[0]+vec_aux_r[1]*vec_aux_r[1]+vec_aux_r[2]*vec_aux_r[2]);
+    double delta_estimado=abs(norma_actual-norma_anterior);
+    double t_estimado= pow(abs(delta_esperado/delta_estimado),1./5.0)*h;
+    if ((S1*t_estimado) > (S2*h)){
+      h= S2*tiempo[2];
+    }
+    else if ((S1*t_estimado)< (h/S2)){
+      h= tiempo[2]/2.;
+    
+    }
+    else {
+      h=S1*t_estimado; 
+    }
+  }
+}
+
+
+
+
+
+
+
+
+vector<double> euler( double a, double x, double v,double t,double dt){
+  vector<double> vec_estado={x,v,t};
+  double h=dt;
+  vec_estado[1]=(v+h*a);
+  vec_estado[0]=(x+h*v);
+  return vec_estado; 
+}
+
+
+
+
+void euler( double (*funcion)(double, double, double),double t0, double tf, double dt, double x0, double v0){
   double h= dt;
   double t=t0;
   vector<double> vec_v={v0};
   vector<double> vec_x={x0};
-  
-  
-  //ofstream archivo("datos.dat");
+ 
   for(int i=0; i<((tf-t0)/dt); ++i){
     double a= funcion(vec_x[i], vec_v[i], t);
     vec_v.push_back(vec_v[i]+h*a);
     vec_x.push_back(vec_x[i]+h*vec_v[i]);
-
-    //cout<<x<<" "<<vec_y[i]<<endl;
     ofstream archivo("datos_velocidad_euler.dat", ios::app);
     archivo <<t<<" "<< vec_v[i]<<endl;
     archivo.close();
@@ -23,7 +112,7 @@ void euler( double (*funcion)(double, double, double), double t0, double tf, dou
     archivo1.close();
     t+= h;
   }
-}  
+}
 
 void euler_cromer( double (*funcion)(double, double, double), double t0, double tf, double dt, double x0, double v0){
   double h= dt;
@@ -36,7 +125,6 @@ void euler_cromer( double (*funcion)(double, double, double), double t0, double 
     double a= funcion(vec_x[i],vec_v[i], t);
     vec_v.push_back(vec_v[i]+h*a);
     vec_x.push_back(vec_x[i]+h*vec_v[i+1]);
-
     //cout<<x<<" "<<vec_y[i]<<endl;
     ofstream archivo("datos_velocidad.dat", ios::app);
     archivo <<t<<" "<< vec_v[i]<<endl;
@@ -55,13 +143,10 @@ void punto_medio( double (*funcion)(double, double,double), double t0, double tf
   vector<double> vec_v={v0};
   vector<double> vec_x={x0};
 
-  //ofstream archivo("datos.dat");
   for(int i=0; i<((tf-t0)/dt); ++i){
     double a= funcion(vec_x[i], vec_v[i], t);
     vec_v.push_back(vec_v[i]+h*a);
     vec_x.push_back(vec_x[i]+0.5*h*(vec_v[i+1]+vec_v[i]));
-
-    //cout<<x<<" "<<vec_y[i]<<endl;
     ofstream archivo("datos_velocidad.dat", ios::app);
     archivo <<t<<" "<< vec_v[i]<<endl;
     archivo.close();
@@ -78,15 +163,12 @@ void verlet( double (*funcion)(double, double, double), double t0, double tf, do
   vector<double> vec_v={v0};
   vector<double> vec_x={x0};
   
-  //ofstream archivo("datos.dat");
-  for(int i=0; i<((tf-t0)/dt); ++i){
+   for(int i=0; i<((tf-t0)/dt); ++i){
     double a_0=funcion(vec_x[i], vec_v[i], t);
     vec_x.push_back(vec_x[i]+vec_v[i]*h+0.5*a_0*h*h);
     double a_1= funcion(vec_x[i+1], vec_v[i+1],(t+h));
     vec_v.push_back(vec_v[i]+0.5*h*(a_0+a_1));
-    //cout << vec_v[i]<<" "<<h<<endl; 
-
-    //cout<<x<<" "<<vec_y[i]<<endl;
+ 
     ofstream archivo("datos_velocidad.dat", ios::app);
     archivo <<t<<" "<< vec_v[i]<<endl;
     archivo.close();
@@ -97,7 +179,6 @@ void verlet( double (*funcion)(double, double, double), double t0, double tf, do
   }
 }
 
-//no funciona para sistemas con primera derivada. 
 void leap_frog( double (*funcion)(double, double, double), double t0, double tf, double dt, double x0, double v0){
   double h= dt;
   double t=t0;
@@ -238,13 +319,6 @@ void euler_predictor_corrector( double (*funcion)(double, double, double), doubl
   }
 }  
 
-
-
-
-
-
-
-
 void PEFRL( double (*f)(double, double,double), double t0, double tf, double dt, double x0,double v0){
   double h= dt;
   double x= x0;
@@ -279,6 +353,7 @@ void PEFRL( double (*f)(double, double,double), double t0, double tf, double dt,
     archivo.close();
   }
 }
+
 
 
 
